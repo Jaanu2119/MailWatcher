@@ -1,0 +1,59 @@
+name: Microsoft Mail Watcher
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub may delay scheduled runs a few minutes under
+    # load; LOOKBACK_MINUTES (default 30) + dedupe cover that gap.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}   # lets you run it manually from the Actions tab
+
+# Needed so the job can commit the updated dedupe state (state/seen.json).
+permissions:
+  contents: write
+
+concurrency:
+  group: mail-watcher
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run watcher
+        env:
+          GMAIL_USER_1: ${{ secrets.GMAIL_USER_1 }}
+          GMAIL_APP_PASSWORD_1: ${{ secrets.GMAIL_APP_PASSWORD_1 }}
+          GMAIL_USER_2: ${{ secrets.GMAIL_USER_2 }}
+          GMAIL_APP_PASSWORD_2: ${{ secrets.GMAIL_APP_PASSWORD_2 }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Optional overrides:
+          # MICROSOFT_KEYWORDS: "microsoft,msft,internship"
+          # GROQ_MODEL: "llama-3.3-70b-versatile"
+          # LOOKBACK_MINUTES: "30"
+        run: python watcher.py
+
+      - name: Persist dedupe state
+        if: always()
+        run: |
+          git config user.name  "mail-watcher-bot"
+          git config user.email "actions@github.com"
+          git add state/seen.json || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update seen-mail state [skip ci]"
+            git push
+          else
+            echo "No state changes to commit."
+          fi
