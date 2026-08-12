@@ -67,6 +67,9 @@ MS_KEYWORDS = [
 # If false (default), notify about any Microsoft mail but loudly flag the result.
 ONLY_INTERNSHIP = os.getenv("ONLY_INTERNSHIP", "false").lower() in ("1", "true", "yes")
 
+# If true, send a "still alive" ping to Telegram on runs that find no MS mail.
+HEARTBEAT = os.getenv("HEARTBEAT", "false").lower() in ("1", "true", "yes")
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -419,6 +422,15 @@ def main():
         total += process_account(user, pw, cutoff, seen)
     save_seen(seen)
     print(f"Done. {total} Microsoft email(s) sent to Telegram this run.")
+
+    if HEARTBEAT and total == 0:
+        # Proof-of-life ping so you can see the watcher is running. When a real
+        # Microsoft email is found, that summary is the signal — no heartbeat.
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        send_telegram(
+            f"💓 Mail Watcher ran at {now} — checked the last {LOOKBACK_MINUTES} "
+            f"min across {len(accounts)} inbox(es). No new Microsoft mail."
+        )
 
 
 if __name__ == "__main__":

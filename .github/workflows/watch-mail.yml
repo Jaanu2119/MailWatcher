@@ -39,8 +39,12 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Heartbeat: sends a "still alive" ping when no Microsoft mail is found.
+          # Set to "false" once you're confident it's running (to stop the pings).
+          HEARTBEAT: "true"
           # Optional overrides:
           # MICROSOFT_KEYWORDS: "microsoft,msft,internship"
+          # ONLY_INTERNSHIP: "false"
           # GROQ_MODEL: "llama-3.3-70b-versatile"
           # LOOKBACK_MINUTES: "30"
         run: python watcher.py
