@@ -42,11 +42,13 @@ jobs:
           # Heartbeat: sends a "still alive" ping when no Microsoft mail is found.
           # Set to "false" once you're confident it's running (to stop the pings).
           HEARTBEAT: "true"
+          # GitHub's scheduled runs are best-effort (often hours apart), so we look
+          # back 12h and rely on dedupe (seen.json) to never miss or repeat a mail.
+          LOOKBACK_MINUTES: "720"
           # Optional overrides:
           # MICROSOFT_KEYWORDS: "microsoft,msft,internship"
           # ONLY_INTERNSHIP: "false"
           # GROQ_MODEL: "llama-3.3-70b-versatile"
-          # LOOKBACK_MINUTES: "30"
         run: python watcher.py
 
       - name: Persist dedupe state
